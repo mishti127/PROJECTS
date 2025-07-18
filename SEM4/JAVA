@@ -1,0 +1,392 @@
+CODE:-
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
+// Interface for room reservation
+interface Reservable {
+    void reserveRoom();
+    void cancelReservation();
+}
+// Superclass for Rooms
+abstract class Room implements Reservable {
+    protected int roomNumber;
+    protected String type;
+    protected double price;
+    protected boolean isBooked;
+    public Room(int roomNumber, String type, double price) {
+        this.roomNumber = roomNumber;
+        this.type = type;
+        this.price = price;
+        this.isBooked = false;
+    }  
+    public double calculatePrice(int nights) {
+        return price * nights; // No discount
+    }
+    public boolean checkAvailability() {
+        return !isBooked;
+    }
+    @Override
+    public void reserveRoom() {
+        if (!isBooked) {
+            isBooked = true;
+            System.out.println("Room " + roomNumber + " booked successfully!");
+        } else {
+            System.out.println("Room " + roomNumber + " is already booked.");
+        }
+  }
+    @Override
+    public void cancelReservation() {
+        if (isBooked) {
+            isBooked = false;
+            System.out.println("Reservation for room " + roomNumber + " has been canceled.");
+        } else {
+            System.out.println("Room " + roomNumber + " is not booked.");
+        }
+    }
+}
+// Deluxe Room (subclass)
+class DeluxeRoom extends Room {
+    public DeluxeRoom(int roomNumber) {
+        super(roomNumber, "Deluxe", 4000.0);
+    }
+
+    public double calculatePrice(int nights) {
+        return price * nights; // No discount
+    }
+}
+// Standard Room (subclass)
+class StandardRoom extends Room {
+    public StandardRoom(int roomNumber) {
+        super(roomNumber, "Standard", 2500.0);
+    }
+    public double calculatePrice(int nights) {
+        return price * nights; // No discount
+    }
+}
+// Super Deluxe Room (subclass)
+class SuperDeluxeRoom extends Room {
+    private boolean hasBreakfast;
+    public SuperDeluxeRoom(int roomNumber) {
+        super(roomNumber, "Super Deluxe", 8500.0);
+        this.hasBreakfast = true; // Complementary breakfast included
+    }
+    public double calculatePrice(int nights) {
+        return price * nights; // No discount
+    }
+    public boolean isBreakfastIncluded() {
+        return hasBreakfast;
+    }
+}
+// Customer class without loyalty program
+class Customer {
+    private String name;
+    public Customer(String name) {
+        this.name = name;
+    }
+}
+// Payment class for handling payments
+class Payment {
+    public static void processPayment(double amount) {
+       System.out.println("\nSelect Payment Method:");
+        System.out.println("1. Credit Card\n2. UPI");
+        System.out.print("Enter your choice: ");
+        int paymentChoice = HotelReservationSystem.scanner.nextInt();
+        switch (paymentChoice) {
+            case 1:
+                System.out.println("Processing Credit Card payment of Rs" + amount + "...");
+                break;
+            case 2:
+                System.out.println("Processing UPI payment of Rs" + amount + "...");
+                break;
+            default:
+                System.out.println("Invalid payment method. Payment failed.");
+                return;
+        }
+        System.out.println("Payment successful!");
+    }
+}
+// Discount class for handling coupons and offers
+class Discount {
+    public static double applyCoupon(String couponCode, double price) {
+        if (couponCode.equalsIgnoreCase("EARLYBIRD")) {
+            System.out.println("Early Bird Discount Applied: 10% off!");
+            return price * 0.9;
+        } else if (couponCode.equalsIgnoreCase("MEMBER50")) {
+            System.out.println("Membership Discount Applied: Rs50 off!");
+            return price - 50;
+        } else {
+            System.out.println("Invalid coupon code. No discount applied.");
+            return price;
+        }
+    }
+}
+// Hotel Reservation System
+public class HotelReservationSystem {
+    private static List<Room> rooms = new ArrayList<>();
+    static Scanner scanner = new Scanner(System.in);  
+    public static void main(String[] args) {
+        initializeRooms();
+        System.out.println("Welcome to the Hotel Reservation System!");
+        System.out.print("Enter your name: ");
+        String customerName = scanner.nextLine();
+        Customer customer = new Customer(customerName);
+        while (true) {
+            System.out.println("\n1. View Available Rooms\n2. Book a Room\n3. Cancel a Booking");
+            System.out.println("4. Services\n5. Exit");
+            System.out.print("Enter your choice: ");
+            int choice = scanner.nextInt();
+            switch (choice) {
+                case 1:
+                    displayAvailableRooms();
+                    break;
+                case 2:
+                    bookRoom(customer);
+                    break;
+                case 3:
+                    cancelRoom();
+                    break;
+                case 4:
+                    handleServices(); // Call the new services menu
+                    break;
+                case 5:
+                    System.out.println("Thank you for using our system!");
+                    return;
+                default:
+                    System.out.println("Invalid choice. Try again.");
+            }
+        }
+    }
+    // Initialize hotel rooms
+    private static void initializeRooms() {
+        for (int i = 1; i <= 5; i++) {
+            rooms.add(new DeluxeRoom(i));
+            rooms.add(new StandardRoom(i + 5));
+            rooms.add(new SuperDeluxeRoom(i + 10)); // Add Super Deluxe Rooms
+        }
+    }
+    // Display available rooms
+    private static void displayAvailableRooms() {
+        System.out.println("\nAvailable Rooms:");
+        for (Room room : rooms) {
+            if (room.checkAvailability()) {
+                System.out.println("Room " + room.roomNumber + " (" + room.type + ") - Rs" + room.price);
+            }
+        }
+    }
+    // Book a room
+    private static void bookRoom(Customer customer) {
+        System.out.print("Enter room number to book: ");
+        int roomNumber = scanner.nextInt();
+        scanner.nextLine(); // Consume newline
+        LocalDate startDate = null;
+        LocalDate endDate = null;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        // Validate and parse the start date
+        while (startDate == null) {
+            System.out.print("Enter start date (YYYY-MM-DD): ");
+            String startDateInput = scanner.nextLine();
+            try {
+                startDate = LocalDate.parse(startDateInput, formatter);
+            } catch (DateTimeParseException e) {
+                System.out.println("Invalid date format. Please enter the date in YYYY-MM-DD format.");
+            }
+        }
+        // Validate and parse the end date
+        while (endDate == null) {
+            System.out.print("Enter end date (YYYY-MM-DD): ");
+            String endDateInput = scanner.nextLine();
+            try {
+                endDate = LocalDate.parse(endDateInput, formatter);
+                if (endDate.isBefore(startDate)) {
+                    System.out.println("End date cannot be before the start date. Please enter a valid end date.");
+                    endDate = null;
+                }
+            } catch (DateTimeParseException e) {
+                System.out.println("Invalid date format. Please enter the date in YYYY-MM-DD format.");
+            }
+        }
+        // Calculate the number of nights
+        long nights = ChronoUnit.DAYS.between(startDate, endDate);
+        if (nights <= 0) {
+            System.out.println("The booking must be for at least one night.");
+            return;
+        }
+        for (Room room : rooms) {
+            if (room.roomNumber == roomNumber && room.checkAvailability()) {
+                double finalPrice = room.calculatePrice((int) nights);
+                System.out.println("Booking Details:");
+                System.out.println("Start Date: " + startDate);
+                System.out.println("End Date: " + endDate);
+                System.out.println("Number of Nights: " + nights);
+                System.out.println("Total cost: Rs" + finalPrice);
+                Payment.processPayment(finalPrice); // Process payment
+                room.reserveRoom();
+                return;
+            }
+        }
+        System.out.println("Room not available.");
+    }
+    // Cancel a booking
+    private static void cancelRoom() {
+        System.out.print("Enter room number to cancel: ");
+        int roomNumber = scanner.nextInt();
+        for (Room room : rooms) {
+            if (room.roomNumber == roomNumber) {
+                room.cancelReservation();
+                return;
+            }
+        }
+        System.out.println("Room not found.");
+    }
+    // Handle services menu
+    private static void handleServices() {
+        while (true) {
+            System.out.println("\nServices Menu:");
+            System.out.println("1. Special Requests\n2. Room Service\n3. Dining Reservations\n4. Back to Main Menu");
+            System.out.print("Enter your choice: ");
+            int serviceChoice = scanner.nextInt();
+            switch (serviceChoice) {
+                case 1:
+                    handleSpecialRequests();
+                    break;
+                case 2:
+                    handleRoomService();
+                    break;
+                case 3:
+                    handleDiningReservations();
+                    break;
+                case 4:
+                    return; // Exit the services menu and go back to the main menu
+                default:
+                    System.out.println("Invalid choice. Try again.");
+            }
+        }
+    }
+    // Handle special requests
+    private static void handleSpecialRequests() {
+        System.out.print("Enter room number for special requests: ");
+        int roomNumber = scanner.nextInt();
+        scanner.nextLine(); // Consume newline
+        for (Room room : rooms) {
+            if (room.roomNumber == roomNumber && room.isBooked) {
+                System.out.println("\nAvailable Special Requests:");
+                System.out.println("1. Extra Bed (Rs250)\n2. Airport Pickup (Rs350)\n3. Customized Meals (Rs300)");
+                System.out.print("Enter your choice: ");
+                int choice = scanner.nextInt();
+                scanner.nextLine(); // Consume newline
+                double baseCost = 0;
+                switch (choice) {
+                    case 1:
+                        baseCost = 250;
+                        System.out.println("Extra bed added to room " + roomNumber + ".");
+                        break;
+                    case 2:
+                        baseCost = 350;
+                        System.out.println("Airport pickup scheduled for room " + roomNumber + ".");
+                        break;
+                    case 3:
+                        baseCost = 300;
+                        System.out.println("Customized meals request noted for room " + roomNumber + ".");
+                        break;
+                    default:
+                        System.out.println("Invalid choice.");
+                        return;
+                }
+                double totalCost = calculateExtraCost(room, baseCost);
+                System.out.println("Total cost for this service: Rs" + totalCost);
+
+                // Process payment
+                Payment.processPayment(totalCost);
+                return;
+            }
+        }
+        System.out.println("Room not booked.");
+    }
+    // Handle room service
+    private static void handleRoomService() {
+        System.out.print("Enter room number for room service: ");
+        int roomNumber = scanner.nextInt();
+        scanner.nextLine(); // Consume newline
+        for (Room room : rooms) {
+            if (room.roomNumber == roomNumber && room.isBooked) {
+                System.out.println("\nAvailable Room Service Options:");
+                System.out.println("1. Food (Rs300)\n2. Drinks (Rs500)\n3. Essentials (Free)");
+                System.out.print("Enter your choice: ");
+                int choice = scanner.nextInt();
+                scanner.nextLine(); // Consume newline
+                double baseCost = 0;
+                switch (choice) {
+                    case 1:
+                        baseCost = 300;
+                        System.out.println("Food order placed for room " + roomNumber + ".");
+                        break;
+                    case 2:
+                        baseCost = 500;
+                        System.out.println("Drinks order placed for room " + roomNumber + ".");
+                        break;
+                    case 3:
+                        System.out.println("Essentials provided for room " + roomNumber + "."); // No cost for essentials
+                        return; // Exit after providing essentials
+                    default:
+                        System.out.println("Invalid choice.");
+                        return;
+                }
+                // Calculate and display the total cost for paid options
+                double totalCost = calculateExtraCost(room, baseCost);
+                System.out.println("Total cost for this service: Rs" + totalCost);
+                return;
+            }
+        }
+        System.out.println("Room not booked.");
+    }
+    // Handle dining reservations
+    private static void handleDiningReservations() {
+        System.out.print("Enter room number for dining reservation: ");
+        int roomNumber = scanner.nextInt();
+        scanner.nextLine(); // Consume newline
+
+        for (Room room : rooms) {
+            if (room.roomNumber == roomNumber && room.isBooked) {
+                System.out.print("Enter the number of people: ");
+                int numberOfPeople = scanner.nextInt();
+                scanner.nextLine(); // Consume newline
+                System.out.print("Enter reservation date (YYYY-MM-DD): ");
+                String dateInput = scanner.nextLine();
+                LocalDate reservationDate;
+                try {
+                    reservationDate = LocalDate.parse(dateInput, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                } catch (DateTimeParseException e) {
+                    System.out.println("Invalid date format. Please enter the date in YYYY-MM-DD format.");
+                    return;
+                }
+                double pricePerPerson = 500; // Example price per person
+                double totalPrice = numberOfPeople * pricePerPerson;
+                System.out.println("\nDining Reservation Details:");
+                System.out.println("Room Number: " + roomNumber);
+                System.out.println("Number of People: " + numberOfPeople);
+                System.out.println("Reservation Date: " + reservationDate);
+                System.out.println("Total Price: Rs" + totalPrice);
+                // Process payment
+                Payment.processPayment(totalPrice);
+                System.out.println("Reservation confirmed. Enjoy your dining experience!");
+                return;
+            }
+        }
+        System.out.println("Room not booked.");
+    }
+
+    // Calculate extra cost based on room type
+    private static double calculateExtraCost(Room room, double baseCost) {
+        if (room instanceof StandardRoom) {
+            return baseCost + 50; // Add Rs50 for Standard Rooms
+        } else if (room instanceof DeluxeRoom) {
+            return baseCost + 30; // Add Rs30 for Deluxe Rooms
+        } else {
+            return baseCost; // No extra cost for Super Deluxe Rooms
+        }
+    }
+}
