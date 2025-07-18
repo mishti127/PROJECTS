@@ -1,0 +1,159 @@
+import pandas as pd
+import numpy as np
+import nltk
+import re
+import random
+from nltk.corpus import stopwords
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import accuracy_score, classification_report
+from textblob import TextBlob
+
+
+# Download stopwords if not already downloaded
+nltk.download('stopwords')
+
+
+
+
+reviews = [
+    "This product is amazing! I love it.",
+    "Worst purchase ever, totally disappointed.",
+    "It's okay, not the best but works fine.",
+    "Excellent quality! Highly recommended.",
+    "Not worth the money, bad quality.",
+    "Very satisfied with the purchase, great value!",
+    "Terrible experience, broke within a week.",
+    "Absolutely fantastic! Exceeded expectations.",
+    "Meh, it's just okay, nothing special.",
+    "Will not buy again, very poor quality.",
+    "Superb! Best thing I ever bought.",
+    "Horrible experience, would not recommend.",
+    "Decent quality for the price.",
+    "A waste of money, don't buy it.",
+    "Love this product! Exactly what I needed.",
+]
+
+
+
+
+sentiments = [random.choice([0, 1, 2]) for _ in range(len(reviews))]
+
+
+df = pd.DataFrame({'review': reviews, 'sentiment': sentiments})
+
+
+
+
+def preprocess_text(text):
+    text = text.lower()  
+    text = re.sub(r'\W', ' ', text)  
+    text = re.sub(r'\s+', ' ', text)  
+    text = ' '.join([word for word in text.split() if word not in stopwords.words('english')]) 
+    return text
+
+
+df['cleaned_review'] = df['review'].apply(preprocess_text)
+
+
+
+
+vectorizer = TfidfVectorizer()
+X = vectorizer.fit_transform(df['cleaned_review'])
+y = df['sentiment']
+
+
+
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+
+
+
+model = MultinomialNB()
+model.fit(X_train, y_train)
+
+
+
+
+y_pred = model.predict(X_test)
+
+
+
+
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Model Accuracy: {accuracy:.2f}\n")
+print("Classification Report:\n", classification_report(y_test, y_pred, target_names=['Negative', 'Neutral', 'Positive']))
+
+
+positive_count = (df['sentiment'] == 2).sum()
+neutral_count = (df['sentiment'] == 1).sum()
+negative_count = (df['sentiment'] == 0).sum()
+
+
+total_reviews = len(df)
+
+
+print("\n--- Customer Satisfaction and Trends ---")
+print(f"Total Reviews Analyzed: {total_reviews}")
+print(f"Positive Reviews: {positive_count} ({(positive_count/total_reviews)*100:.2f}%)")
+print(f"Neutral Reviews: {neutral_count} ({(neutral_count/total_reviews)*100:.2f}%)")
+print(f"Negative Reviews: {negative_count} ({(negative_count/total_reviews)*100:.2f}%)")
+
+
+# Identifying overall sentiment trend
+if positive_count > negative_count:
+    print("\nOverall Trend: Customers are generally satisfied with this product! ")
+elif negative_count > positive_count:
+    print("\nOverall Trend: Customers are mostly dissatisfied with this product.")
+else:
+    print("\nOverall Trend: Mixed reviews, some like it, some don't.")
+
+
+def analyze_sentiment(review):
+    analysis = TextBlob(review)
+    sentiment_score = analysis.sentiment.polarity
+   
+    if sentiment_score > 0:
+        return "Positive"
+    elif sentiment_score < 0:
+        return "Negative"
+    else:
+        return "Neutral"
+
+
+def get_classification_report(reviews, labels):
+    label_mapping = {"Negative": 0, "Neutral": 1, "Positive": 2}
+   
+    
+    labels = [label.capitalize() for label in labels]
+   
+    try:
+        predictions = [label_mapping[analyze_sentiment(review)] for review in reviews]
+        true_labels = [label_mapping[label] for label in labels]
+       
+        
+        unique_classes = sorted(list(set(true_labels + predictions)))
+       
+      
+        target_names = [name for i, name in enumerate(["Negative", "Neutral", "Positive"]) if i in unique_classes]
+       
+        return classification_report(true_labels, predictions, target_names=target_names)
+    except KeyError as e:
+        return f"Error: Invalid label encountered - {e}. Please enter labels as 'Positive', 'Negative', or 'Neutral'."
+
+
+if __name__ == "__main__":
+    reviews = []
+    labels = []
+    num_reviews = int(input("Enter number of reviews: "))
+   
+    for _ in range(num_reviews):
+        review = input("Enter your product review: ")
+        label = input("Enter actual sentiment (Positive/Negative/Neutral): ").strip().capitalize()
+        reviews.append(review)
+        labels.append(label)
+   
+    print("\nClassification Report:")
+    print(get_classification_report(reviews, labels))
