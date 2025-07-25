@@ -1,0 +1,110 @@
+import os
+def get_movie_recommendations(language, genre):
+    movies = {
+        ("English", "Action"): [("Mission Impossible", 9.0), ("Inception", 8.8), ("Money Heist", 8.1)],
+        ("English", "Comedy"): [("FRIENDS", 9.7), ("The Big Bang Theory", 7.6), ("The Office", 8.0)],
+        ("English", "Drama"): [("The Shawshank Redemption", 9.3), ("Forrest Gump", 8.8), ("The Godfather", 9.2)],
+        ("English", "Horror"): [("The Conjuring", 9.0), ("Hereditary", 8.5), ("Annabelle", 8.9), ("Insidious", 8.3)],
+        ("English", "Romantic"): [("Purple Hearts", 9.5), ("Emily In Paris", 8.6), ("The Perfect Date", 8.0)],
+        
+        ("Spanish", "Action"): [("El Mariachi", 6.9), ("Desperado", 7.2), ("Celda 211", 7.7)],
+        ("Spanish", "Comedy"): [("Ocho Apellidos Vascos", 6.4), ("Torrente", 6.5), ("Perdiendo el Norte", 6.4)],
+        ("Spanish", "Drama"): [("Mar adentro", 7.6), ("Volver", 7.6), ("Tesis", 7.4)],
+        ("Spanish", "Horror"): [("Veronica", 8.9), ("Julia's Eyes", 7.2), ("The Orphanage", 8.7)],
+        ("Spanish", "Romantic"): [("Culpa Mía", 9.8), ("A través de mi ventana", 8.5), ("Fin de siglo", 7.4)],
+        
+        ("Hindi", "Action"): [("Fighter", 9.0), ("War", 8.8), ("Race", 8.1)],
+        ("Hindi", "Comedy"): [("PK", 8.7), ("3 Idiots", 7.6), ("Golmaal", 8.0)],
+        ("Hindi", "Drama"): [("Sanju", 9.3), ("Lagaan", 8.8), ("Mary Kom", 9.2), ("Taare Zameen Par", 9.2)],
+        ("Hindi", "Horror"): [("Stree", 9.0), ("Shaitaan", 8.5), ("Boothnath", 8.9), ("Pari", 8.3)],
+        ("Hindi", "Romantic"): [("Yeh Jawaani Hai Deewani", 9.5), ("Student of the year", 8.6), ("Kuch Kuch Hota Hai", 8.0)],
+        
+        ("Telugu", "Action"): [("Salaar", 8.9), ("KGF", 9.2), ("Bahubali", 9.0)],
+        ("Telugu", "Comedy"): [("MAD", 9.4), ("Ee nagaraniki emaindhi", 8.5), ("Aa Okkati Adakku", 8.4)],
+        ("Telugu", "Drama"): [("Mar adentro", 7.6), ("Volver", 7.6), ("Tesis", 7.4)],
+        ("Telugu", "Horror"): [("Ratri", 8.9), ("Masooda", 7.2), ("Bhaagamathie", 8.7)],
+        ("Telugu", "Romantic"): [("Sita Ramam", 9.8), ("Pelli Choopulu", 8.5), ("Geetha Govindam", 8.4)],
+        
+        ("Korean", "Action"): [("The Bros", 7.9), ("The Pirates", 7.0), ("Carter", 7.7), ("Seoul vibe", 8.0)],
+        ("Korean", "Comedy"): [("My Demon", 7.4), ("Business Proposal", 7.9), ("Dream", 6.7)],
+        ("Korean", "Drama"): [("True Beauty", 7.6), ("My ID is Gangnam Beauty", 7.6), ("Vincenzo", 7.4)],
+        ("Korean", "Horror"): [("Train to busan", 8.4), ("Gyeongseong creature", 7.5), ("All of us are dead", 6.4)],
+        ("Korean", "Romantic"): [("Xo kitty", 9.1), ("Nevertheless", 9.0), ("What's wrong with secretary kim", 7.4)],
+        
+        ("Japanese", "Anime"): [("Naruto", 9.5), ("One piece", 7.9), ("Death Note", 9.5),
+                                ("Jujutsu Kaisen", 7.6), ("Bungo stray dogs", 6.6), ("Your name", 6.7)]
+    }
+
+    key = (language, genre)
+    if key in movies:
+        return movies[key]
+    else:
+        return None
+
+def log_movie_recommendation(genre, language, rating, title):
+    with open("movie_recommendations.txt", "a") as file:
+        file.write(f"Genre: {genre}, Language: {language}, Rating: {rating}, Title: {title}\n")
+
+def read_user_recommendations(language, genre):
+    if not os.path.exists("movie_recommendations.txt"):
+        with open("movie_recommendations.txt", "w") as file:
+            pass
+
+    user_recommendations = []
+    with open("movie_recommendations.txt", "r") as file:
+        for line in file:
+            if line.startswith("Genre:"):
+                parts = line.strip().split(",")
+                user_genre = parts[0].split(":")[1].strip()
+                user_language = parts[1].split(":")[1].strip()
+                rating = float(parts[2].split(":")[1].strip())
+                title = parts[3].split(":")[1].strip()
+                if user_genre == genre and user_language == language:
+                    user_recommendations.append((user_genre, user_language, rating, title))
+    return user_recommendations
+
+def main():
+    print("Welcome to the Movie Recommender!")
+
+    while True:
+        print("Enter '1' for movie recommendations.")
+        print("Enter '2' to enter your recommendations.")
+        print("Enter '3' to exit.")
+        choice = input("Please enter your choice: ")
+
+        if choice == "1":
+            language = input("Enter language (e.g., English, Spanish, Hindi, Telugu, Korean, Japanese): ")
+            genre = input("Enter genre (e.g., Action, Comedy, Drama, Horror, Romantic, Anime): ")
+            system_recommendations = get_movie_recommendations(language, genre)
+            user_recommendations = read_user_recommendations(language, genre)
+
+            if system_recommendations is None and not user_recommendations:
+                print("Movie genre not available.")
+            else:
+                print("\nRecommended Movies:")
+                if system_recommendations:
+                    for movie, rating in system_recommendations:
+                        print(f"{movie}: {rating}")
+                if user_recommendations:
+                    print("\nUser Recommendations:")
+                    for recommendation in user_recommendations:
+                        user_genre, user_language, rating, title = recommendation
+                        print(f"{title} ({user_language}, {user_genre}) : {rating}")
+                print()
+
+        elif choice == "2":
+            genre = input("Enter genre: ")
+            language = input("Enter language: ")
+            title = input("Enter movie title: ")
+            rating = float(input("Enter rating: "))
+            log_movie_recommendation(genre, language, rating, title)
+            print("Thank you for your recommendation! It has been logged.\n")
+
+        elif choice == "3":
+            print("Exiting Movie Recommender. Goodbye!")
+            break
+        else:
+            print("Invalid choice. Please try again.")
+
+if _name_ == "_main_":
+    main()
